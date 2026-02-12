@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Draco</title>
+
+<link rel="manifest" href="/static/manifest.json">
+
+<script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/browser.js"></script>
+
+<style>
+body {
+  margin:0;
+  height:100vh;
+  background: radial-gradient(circle at top, #111, #000);
+  font-family:-apple-system, BlinkMacSystemFont;
+  color:white;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+/* iOS Glass Card */
+.glass {
+  width:95%;
+  max-width:500px;
+  height:90vh;
+  background:rgba(30,30,30,0.4);
+  --backdrop-filter:blur(25px);
+  border-radius:30px;
+  border:1px solid rgba(255,255,255,0.1);
+  display:flex;
+  flex-direction:column;
+  padding:20px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.8);
+}
+
+/* Clock */
+#clock {
+  text-align:center;
+  font-size:20px;
+  opacity:0.7;
+}
+
+/* Chat */
+#chat {
+  flex:1;
+  overflow-y:auto;
+  margin:10px 0;
+}
+
+.msg { margin:6px 0; }
+.user { color:#ff7a00; }
+.ai { color:#ccc; }
+
+/* Input */
+.inputRow {
+  display:flex;
+  gap:8px;
+}
+
+input {
+  flex:1;
+  padding:12px;
+  border-radius:20px;
+  border:none;
+  outline:none;
+}
+
+button {
+  border:none;
+  border-radius:50%;
+  padding:12px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="glass">
+  <div id="clock"></div>
+  <div class="orb" id="orb"></div>
+  <div id="chat"></div>
+
+  <div class="inputRow">
+    <input id="text" placeholder="Talk to Draco..." />
+    <button onclick="toggleEmoji()">😊</button>
+    <button onclick="send()">➤</button>
+  </div>
+
+  <div id="emojiContainer" style="display:none;"></div>
+</div>
+
+<script>
+const session_id="user_"+Math.random();
+const chat=document.getElementById("chat");
+const input=document.getElementById("text");
+const orb=document.getElementById("orb");
+
+/* CLOCK */
+function updateClock(){
+  document.getElementById("clock").textContent=
+    new Date().toLocaleTimeString();
+}
+setInterval(updateClock,1000);
+updateClock();
+
+/* CHAT */
+function add(role,text){
+  const div=document.createElement("div");
+  div.className="msg "+role;
+  div.textContent=text;
+  chat.appendChild(div);
+  chat.scrollTop=chat.scrollHeight;
+}
+
+async function send(textOverride=null){
+  const text=textOverride||input.value.trim();
+  if(!text) return;
+  add("user",text);
+  input.value="";
+
+  const res=await fetch("/chat",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({session_id,message:text})
+  });
+
+  const data=await res.json();
+  add("ai",data.reply);
+
+  const speech=new SpeechSynthesisUtterance(data.reply);
+  speech.rate=1;
+  speechSynthesis.speak(speech);
+}
+
+/* EMOJI MART */
+let picker;
+function toggleEmoji(){
+  const container=document.getElementById("emojiContainer");
+  container.style.display=
+    container.style.display==="none"?"block":"none";
+
+  if(!picker){
+    picker=new EmojiMart.Picker({
+      onEmojiSelect:e=>{
+        input.value+=e.native;
+      }
+    });
+    container.appendChild(picker);
+  }
+}
+
+/* WAKE WORD */
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if(SpeechRecognition){
+  const recognition=new SpeechRecognition();
+  recognition.continuous=true;
+  recognition.lang="en-US";
+
+  recognition.onresult=e=>{
+    const text=e.results[e.results.length-1][0].transcript
+      .toLowerCase();
+
+    if(text.includes("draco")){
+      orb.classList.add("active");
+      const cleaned=text.replace("draco","").trim();
+      if(cleaned) send(cleaned);
+      setTimeout(()=>orb.classList.remove("active"),1000);
+    }
+  };
+
+  recognition.start();
+}
+
+/* ENTER */
+input.addEventListener("keydown",e=>{
+  if(e.key==="Enter") send();
+});
+
+/* PWA REGISTER */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/static/sw.js');
+}
+</script>
+
+</body>
+</html>
+
