@@ -11,6 +11,10 @@ from groq_ai import get_response
 from aircraft_module import handle_aircraft_command, get_nearby_aircraft
 from system_module import handle_system_command, IS_WINDOWS
 
+# Interface utility
+class StreamlitPlayer:
+    def write_log(self, text): st.toast(text)
+
 # Streamlit UI Configuration
 st.set_page_config(page_title="AI-FRANK", page_icon="🤖", layout="wide")
 
@@ -34,6 +38,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "initialized" not in st.session_state:
     st.session_state.initialized = False
+
+# Placeholder for audio playback to prevent widget stacking
+audio_placeholder = st.empty()
 
 # Sidebar Telemetry
 with st.sidebar:
@@ -78,7 +85,7 @@ if not st.session_state.initialized:
     briefing = asyncio.run(get_briefing())
     st.session_state.messages.append({"role": "assistant", "content": briefing})
     audio = asyncio.run(get_audio_bytes(briefing))
-    st.audio(audio, format="audio/mp3", autoplay=True)
+    audio_placeholder.audio(audio, format="audio/mp3", autoplay=True)
     st.session_state.initialized = True
 
 # Chat History
@@ -90,10 +97,6 @@ if prompt := st.chat_input("Command Frank..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
-    # Process Command
-    class StreamlitPlayer:
-        def write_log(self, text): st.toast(text)
-    
     player = StreamlitPlayer()
     # Capture the specific response from modules
     module_response = handle_aircraft_command(prompt, player) or handle_system_command(prompt, player)
@@ -108,4 +111,4 @@ if prompt := st.chat_input("Command Frank..."):
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.chat_message("assistant").write(response)
     audio = asyncio.run(get_audio_bytes(response))
-    st.audio(audio, format="audio/mp3", autoplay=True)
+    audio_placeholder.audio(audio, format="audio/mp3", autoplay=True)

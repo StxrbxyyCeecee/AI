@@ -12,6 +12,11 @@ try:
     IS_WINDOWS = True
 except ImportError:
     IS_WINDOWS = False
+    # Define these as None so the linter knows they exist in the namespace
+    cast = None
+    POINTER = None
+    CLSCTX_ALL = None
+    AudioUtilities = IAudioEndpointVolume = None
 
 def get_volume_interface():
     """Helper to access the Windows Master Volume interface."""
@@ -66,10 +71,11 @@ def handle_system_command(user_text, player):
     # 4. Mute/Unmute
     if match_commands(user_text, ["mute system", "silence audio", "mute volume"]):
         volume = get_volume_interface()
-        volume.SetMute(1, None)
-        player.write_log("System muted.")
-        # We don't speak here because we are muted!
-        return True
+        if volume:
+            volume.SetMute(1, None)
+            player.write_log("System muted.")
+            return True
+        return False
 
     if match_commands(user_text, ["unmute system", "restore audio", "unmute volume"]):
         volume = get_volume_interface()

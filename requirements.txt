@@ -1,6 +1,8 @@
-Flask
-Flask-SocketIO
-gevent
-gevent-websocket
-gunicorn
-SpeechRecognition
+streamlit
+openai
+edge-tts
+pandas
+psutil
+requests
+comtypes; sys_platform == 'win32'
+pycaw; sys_platform == 'win32'
