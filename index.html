@@ -378,28 +378,6 @@
         const SUPABASE_KEY = "sb_publishable_5AhJkNMX-VijLEiJGe250w_-bxJb4wE"; // <<< FILLED IN
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        // Check session on load
-        checkSession();
-
-        async function checkSession() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                document.getElementById('auth-overlay').style.display = 'none';
-            }
-        }
-
-        async function handleAuth(type) {
-            if (type === 'login') {
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) alert(error.message);
-                else checkSession();
-            } else {
-                await supabaseClient.auth.signOut();
-                location.reload();
-            }
-        }
 
         // The public URL provided by ngrok to connect to your local Python backend
         const SERVER_URL = "https://[YOUR_NGROK_TUNNEL_URL]"; // <<< FILL THIS IN
