@@ -2,6 +2,7 @@ import re
 import os
 import time
 from aircraft_module import match_commands
+import streamlit as st
 
 # Graceful Windows Hardware Access for Cloud Deployment
 try:
@@ -81,8 +82,8 @@ def handle_system_command(user_text, player):
     if match_commands(user_text, ["stop the program", "shutdown", "exit frank", "terminate system", "self destruct"]):
         msg = "Terminating all system processes. Goodbye, sir."
         player.write_log(msg)
-        time.sleep(5)  # Allow time for the voice to finish speaking
-        os._exit(0)    # Forcefully exits the entire process and all threads
+        st.toast("System shutting down...")
+        st.stop()
         return True
 
     return False

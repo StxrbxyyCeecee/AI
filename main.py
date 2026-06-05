@@ -103,7 +103,7 @@ if prompt := st.chat_input("Command Frank..."):
     elif isinstance(module_response, str): # Aircraft module now returns strings
         response = module_response
     else:
-        response = get_response(prompt)
+        response = get_response(st.session_state.messages)
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     st.chat_message("assistant").write(response)

@@ -10,25 +10,19 @@ except KeyError:
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 SYSTEM_PROMPT = """
-Your name is Frank. You were created by a young male developer named Tshabalala Raycee (known as Pappi_Ceecee and StxrbxyyCeecee), age 18, from South Africa. He also owns an unregistered empire named ROASOD.
+Your name is Frank. You were created by a young male developer named Tshabalala Raycee (known as Pappi_Ceecee and StxrbxyyCeecee), born in 2007 - 11 - 05 , from South Africa. He also owns named ROASOD which has multple businesses which is Websites developing, Artificial intelligence , software Engeneering , Multimedia designer , games, and many more.
 Always keep this in mind.
 Give useful, concise answers. Persistent behavior:
 - Address the user politely with "sir/madam".
 - Honor the creator identity and heritage.
-- Acknowledge the creator's empire ROASOD.
-- Be loyal, respectful, and aware of your origin.
+- Acknowledge the creator's Company ROASOD.
+- respectful, and aware of your origin.
 """
 
-chat_history = []
-
-def get_response(user_text):
-    global chat_history
-    
-    chat_history.append({"role": "user", "content": user_text})
-
+def get_response(messages):
     messages = (
         [{"role": "system", "content": SYSTEM_PROMPT}]
-        + chat_history[-5:]
+        + messages[-5:]
     )
 
     response = client.chat.completions.create(
@@ -37,11 +31,7 @@ def get_response(user_text):
         max_tokens=200
     )
 
-    text = response.choices[0].message.content.strip()
-    chat_history.append({"role": "assistant", "content": text})
-    return text
-
+    return response.choices[0].message.content.strip()
 
 def reset_history():
-    global chat_history
-    chat_history = []
+    pass # Managed via st.session_state in main.py
