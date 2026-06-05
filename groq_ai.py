@@ -3,7 +3,7 @@ import streamlit as st
 
 # Retrieve the API key from Streamlit Secrets
 try:
-    OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+    OPENAI_API_KEY = st.secrets["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"]
 except KeyError:
     raise ValueError("Missing OPENAI_API_KEY. Please set it in .streamlit/secrets.toml or Streamlit Cloud Secrets.")
 
