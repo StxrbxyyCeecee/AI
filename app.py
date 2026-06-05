@@ -1,90 +1,44 @@
+from gevent import monkey
+monkey.patch_all()
+
 import os
-from flask import Flask, request, jsonify, render_template
-from flask_cors import CORS
-from dotenv import load_dotenv
-from openai import OpenAI
+from flask import Flask, render_template, send_from_directory
+from flask_socketio import SocketIO, emit
 
-# =========================
-# ENV
-# =========================
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+app = Flask(__name__, static_folder=".", template_folder=".")
+app.config['SECRET_KEY'] = 'frank_secret_key'
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
-if not api_key:
-    raise ValueError("OPENAI_API_KEY is missing!")
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-client = OpenAI(api_key=api_key)
+@app.route('/watch')
+def watch():
+    return render_template('watch.html')
 
-# =========================
-# APP
-# =========================
-app = Flask(__name__)
-CORS(app)
+@socketio.on('manual_chat')
+def handle_chat(data):
+    user_text = data.get('text', '')
+    print(f"Received message: {user_text}", flush=True)
+    
+    response = f"Frank (Local Node): I received '{user_text}'"
 
-# =========================
-# MEMORY (in-memory session store)
-# =========================
-sessions = {}
-MAX_MEMORY = 20
+    # Emit back to the terminal
+    emit('new_log', {'text': f"You: {user_text}"})
+    emit('new_log', {'text': f"Frank: {response}"})
+    
+    # Trigger orb animation
+    emit('speak_state', {'active': True})
+    socketio.sleep(2)
+    emit('speak_state', {'active': False})
 
-SYSTEM_PROMPT = (
-    "Your name is Draco. "
-    "You are a highly intelligent personal AI clone of ChatGPT. "
-    "You speak naturally and confidently. "
-    "You are calm, thoughtful, intelligent, and emotionally aware. "
-    "You maintain conversation memory."
-)
+@socketio.on('watch_sync_complete')
+def watch_sync():
+    emit('watch_state_change', {'connected': True}, broadcast=True)
+    emit('new_log', {'text': "SYSTEM: Smartwatch link established via Render."}, broadcast=True)
 
-def get_session_memory(session_id):
-    if session_id not in sessions:
-        sessions[session_id] = []
-    return sessions[session_id]
-
-# =========================
-# ROUTES
-# =========================
-
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-@app.route("/chat", methods=["POST"])
-def chat():
-    data = request.json
-    session_id = data.get("session_id")
-    message = data.get("message")
-
-    if not session_id or not message:
-        return jsonify({"error": "Invalid request"}), 400
-
-    memory = get_session_memory(session_id)
-
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    messages.extend(memory)
-    messages.append({"role": "user", "content": message})
-
-    response = client.responses.create(
-        model="gpt-4.1-mini",
-        input=messages
-    )
-
-    reply = response.output_text
-
-    memory.append({"role": "user", "content": message})
-    memory.append({"role": "assistant", "content": reply})
-
-    if len(memory) > MAX_MEMORY:
-        memory = memory[-MAX_MEMORY:]
-        sessions[session_id] = memory
-
-    return jsonify({"reply": reply})
-
-@app.route("/health")
-def health():
-    return jsonify({"status": "Draco online"})
-
-# =========================
-# RUN (for local dev)
-# =========================
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    # Render provides a PORT environment variable
+    port = int(os.environ.get("PORT", 5000))
+    socketio.run(app, host='0.0.0.0', port=port)

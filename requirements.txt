@@ -1,5 +1,6 @@
-flask
-flask-cors
-python-dotenv
-openai
+Flask
+Flask-SocketIO
+gevent
+gevent-websocket
 gunicorn
+SpeechRecognition

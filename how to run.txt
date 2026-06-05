@@ -1,0 +1,17 @@
+# Step 1: Create the Virtual Environment (Run once)
+python -m venv .venv
+
+# Step 2: Activate the Environment
+# For PowerShell:
+# If you get an "execution policy" error, run this command first:
+# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+.\.venv\Scripts\Activate.ps1
+# For Command Prompt:
+.\.venv\Scripts\activate
+
+# Step 3: Install Requirements
+pip install -r requirements.txt
+
+# Step 4: Run the Application
+python main.py

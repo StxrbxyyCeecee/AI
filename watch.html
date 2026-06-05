@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Frank - Smartwatch</title>
+    <style>
+        body {
+            background-color: #000216;
+            color: #00ffff;
+            font-family: 'Consolas', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .qr-scanner {
+            width: 300px;
+            height: 300px;
+            border: 2px solid #00ffff;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 255, 255, 0.05) 10px, rgba(0, 255, 255, 0.05) 20px);
+        }
+        .qr-placeholder {
+            width: 200px;
+            height: 200px;
+            background: white; /* Simulating a QR code placeholder */
+            border-radius: 10px;
+            position: relative;
+        }
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #00ffff;
+            box-shadow: 0 0 15px #00ffff;
+            animation: scan 2s infinite ease-in-out;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .status-panel {
+            margin-top: 30px;
+            text-align: center;
+            width: 80%;
+            padding: 20px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+        }
+        .data-stream {
+            font-size: 0.8rem;
+            color: rgba(0, 255, 255, 0.6);
+            margin-top: 10px;
+        }
+        button {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: inherit;
+        }
+        h1 { font-size: 1.5rem; letter-spacing: 4px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+    <h1>Biometric & Watch Link</h1>
+    <p>Scan the code on your watch to deploy AI Core</p>
+    
+    <div class="qr-scanner">
+        <div class="scan-line"></div>
+        <div class="qr-placeholder">
+            <!-- In a real app, an actual QR image would be generated here -->
+            <div style="padding: 20px; color: black; font-weight: bold; text-align: center;">SYNC QR GENERATED</div>
+        </div>
+    </div>
+
+    <div class="status-panel">
+        <div id="connection-status">STATUS: AWAITING HANDSHAKE...</div>
+        <div class="data-stream">Accessing: Heart Rate, GPS, Accelerometer, System Files</div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <button id="sync-btn" style="background: #00ffff; color: #000216; font-weight: bold;">COMPLETE SYNC</button>
+        <button onclick="location.href='/'">RETURN</button>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        const socket = io({ transports: ['websocket', 'polling'] });
+        const syncBtn = document.getElementById('sync-btn');
+        const status = document.getElementById('connection-status');
+
+        syncBtn.onclick = () => {
+            status.innerText = "STATUS: ENCRYPTED LINK ESTABLISHED";
+            status.style.color = "#00ff00";
+            socket.emit('watch_sync_complete');
+        };
+    </script>
+</body>
+</html>

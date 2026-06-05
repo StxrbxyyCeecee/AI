@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-FRANK | ROASOD-W </title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: #000216;
+            color: #00ffff;
+            font-family: 'Consolas', 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .orb-container {
+            margin-top: 10px; /* Adjusted margin from h1 */
+            margin-bottom: 20px; /* Adjusted margin to chat-container */
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .orb {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: transparent;
+            animation: float-orb 4s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+            transition: transform 0.2s ease-out;
+        }
+
+        .orb::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(0, 123, 255, 0.5);
+            z-index: -1;
+            animation: pulse-glow 2s infinite ease-in-out alternate;
+        }
+
+        .orb span {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            filter: blur(15px);
+            opacity: 0.9;
+            mix-blend-mode: screen;
+        }
+
+        .orb span:nth-child(1) {
+            background: linear-gradient(#00C6FF, #0072FF);
+            animation: rotate-orb-1 2s linear infinite;
+            transform-origin: 50% 60%;
+        }
+
+        .orb span:nth-child(2) {
+            background: linear-gradient(#7F00FF, #E100FF);
+            animation: rotate-orb-2 2s linear infinite;
+            transform-origin: 60% 50%;
+        }
+
+        .orb span:nth-child(3) {
+            background: linear-gradient(#00d2ff, #3a7bd5);
+            animation: rotate-orb-3 2s linear infinite;
+            transform-origin: 40% 40%;
+        }
+
+        .glass-layer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(2px);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .layer-1 {
+            width: 130%;
+            height: 130%;
+            animation: float-layer-1 6s ease-in-out infinite;
+        }
+
+        .layer-2 {
+            width: 160%;
+            height: 160%;
+            border-color: rgba(255, 255, 255, 0.1);
+            animation: float-layer-2 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float-orb {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-20px) scale(1.05); }
+        }
+
+        @keyframes rotate-orb-1 {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes rotate-orb-2 {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+
+        @keyframes rotate-orb-3 {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes float-layer-1 {
+            0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+            50% { transform: translate(-50%, -50%) scale(1.05) rotate(10deg); }
+        }
+
+        @keyframes float-layer-2 {
+            0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+            50% { transform: translate(-50%, -50%) scale(1.02) rotate(-10deg); }
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 50px rgba(0, 123, 255, 0.5); transform: translate(-50%, -50%) scale(0.9); }
+            100% { box-shadow: 0 0 80px rgba(0, 123, 255, 0.8); transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .orb.listening::before {
+            animation: pulse-glow 3s infinite ease-in-out alternate;
+        }
+
+        .orb.speaking {
+            animation: float-orb-speaking 2s ease-in-out infinite;
+        }
+
+        @keyframes float-orb-speaking {
+            0%, 100% { transform: translateY(0) scale(1.0); }
+            50% { transform: translateY(-15px) scale(1.05); }
+        }
+        .orb-container.pulse .orb {
+            transform: scale(1.15);
+        }
+        .alert-hr .orb { /* Changed from #ai-core */
+            background: radial-gradient(circle, #ff0000 10%, #4d0000 80%) !important;
+            box-shadow: 0 0 50px #ff0000, inset 0 0 30px #000 !important;
+            animation: pulse-red 0.4s infinite alternate ease-in-out !important;
+        }
+        @keyframes pulse-red {
+            from { transform: scale(1); box-shadow: 0 0 40px #ff0000; }
+            to { transform: scale(1.15); box-shadow: 0 0 80px #ff0000, 0 0 20px #fff; }
+        }
+        .alert-hr #terminal {
+            border-color: #ff0000 !important;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3) !important;
+        }
+        .alert-hr .ai-msg {
+            color: #ff0000 !important;
+            border-left-color: #ff0000 !important;
+        }
+        #terminal {
+            width: 70%;
+            height: 250px;
+            background: rgba(0, 31, 77, 0.6);
+            border: 1px solid #00ffff;
+            margin-top: 40px;
+            padding: 20px;
+            overflow-y: auto;
+            font-size: 14px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+            border-radius: 5px;
+            scrollbar-width: thin;
+            scrollbar-color: #00ffff #001f4d;
+        }
+        .user-msg { color: #ffffff; margin-bottom: 8px; opacity: 0.8; }
+        .ai-msg { color: #00ffff; margin-bottom: 15px; font-weight: bold; border-left: 3px solid #00ffff; padding-left: 10px; }
+        h1 {
+            font-family: 'Orbitron', sans-serif; /* A futuristic font */
+            font-size: 2.5rem; /* Larger font size */
+            letter-spacing: 8px; /* More pronounced letter spacing */
+            margin-bottom: 10px; /* Adjusted margin for better separation from orb */
+            text-transform: uppercase;
+            text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff; /* Enhanced neon glow */
+            color: #e0ffff; /* Slightly brighter cyan */
+        }
+        
+        #wake-btn {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 25px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+            text-transform: uppercase;
+        }
+        #wake-btn:hover { background: rgba(0, 255, 255, 0.1); box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+        #wake-btn:active { transform: scale(0.95); }
+
+        #chat-container {
+            display: flex;
+            width: 70%;
+            margin-top: 20px;
+            gap: 10px;
+        }
+        #chat-input {
+            flex-grow: 1;
+            background: rgba(0, 31, 77, 0.4);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px;
+            font-family: 'Consolas', monospace;
+            border-radius: 5px;
+            outline: none;
+        }
+        #chat-btn {
+            background: #00ffff;
+            color: #000216;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Consolas', monospace;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        #stop-btn {
+            background: #ff4d4d;
+            color: #000216;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Consolas', monospace;
+            cursor: pointer;
+            font-weight: bold;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        #chat-btn:hover { background: #008b8b; }
+        #stop-btn:hover { background: #cc0000; color: white; }
+
+        #watch-dashboard {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 80%;
+            max-width: 800px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.7rem;
+            border-radius: 5px;
+        }
+        .metric-box { border-left: 2px solid #00ffff; padding-left: 8px; }
+        .metric-label { display: block; opacity: 0.6; text-transform: uppercase; font-size: 0.6rem; }
+        .metric-value { font-weight: bold; font-size: 0.9rem; }
+
+        #system-monitor {
+            display: flex;
+            gap: 20px;
+            width: 70%;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.7rem;
+            border-radius: 5px;
+        }
+        .stats { margin-top: 20px; display: flex; gap: 20px; color: #00ffff; }
+        .pulse { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        /* Auth Styles */
+        #auth-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000216;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+        .auth-card {
+            background: rgba(0, 31, 77, 0.6);
+            border: 1px solid #00ffff;
+            padding: 30px;
+            border-radius: 10px;
+            display: flex; flex-direction: column; gap: 15px;
+            width: 300px;
+        }
+        .auth-card input {
+            background: transparent;
+            border: 1px solid #00ffff;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #logout-btn {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: transparent; border: 1px solid #ff4d4d; color: #ff4d4d;
+            padding: 5px 10px; cursor: pointer; font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Frank</h1>
+        <div class="orb-container">
+            <div class="orb">
+                <span></span>
+                <span></span>
+                <span></span>
+                <div class="glass-layer layer-1"></div>
+                <div class="glass-layer layer-2"></div>
+            </div>
+    </div>
+
+    <div id="auth-overlay">
+        <div class="auth-card">
+            <h2 style="text-align:center; letter-spacing: 2px;">SECURE LOGIN</h2>
+            <input type="email" id="auth-email" placeholder="Email">
+            <input type="password" id="auth-password" placeholder="Password">
+            <button id="chat-btn" onclick="handleAuth('login')">INITIALIZE</button>
+        </div>
+    </div>
+
+    <button id="logout-btn" onclick="handleAuth('logout')">TERMINATE SESSION</button>
+
+    <div id="chat-container">
+        <input type="text" id="chat-input" placeholder="Type your message...">
+        <button id="chat-btn">Send</button>
+        <button id="stop-btn">STOP</button>
+    </div>    
+        <div class="stats">
+        <div>CPU: <span id="cpu">0</span>%</div>
+        <div>RAM: <span id="ram">0</span>%</div>
+    </div>
+
+    <div id="watch-dashboard">
+        <div class="metric-box"><span class="metric-label">Clock</span><span class="metric-value" id="val-clock">00:00</span></div>
+        <div class="metric-box"><span class="metric-label">Heart Rate</span><span class="metric-value" id="val-hr">--</span></div>
+        <div class="metric-box"><span class="metric-label">SpO2</span><span class="metric-value" id="val-spo2">--</span></div>
+        <div class="metric-box"><span class="metric-label">Stress</span><span class="metric-value" id="val-stress">--</span></div>
+        <div class="metric-box"><span class="metric-label">Activity</span><span class="metric-value" id="val-act">Stable</span></div>
+        <div class="metric-box"><span class="metric-label">Sleep</span><span class="metric-value" id="val-sleep">7.2h</span></div>
+        <div class="metric-box"><span class="metric-label">Weather</span><span class="metric-value" id="val-weather">22°C</span></div>
+        <div class="metric-box"><span class="metric-label">Music</span><span class="metric-value" id="val-music">Idle</span></div>
+        <div class="metric-box"><span class="metric-label">Dial</span><span class="metric-value">Active</span></div>
+    </div>
+    <a href="watch.html" id="watch-link" style="color: #00ffff; margin-top: 15px; text-decoration: none; font-size: 0.7rem; border: 1px solid rgba(0, 255, 255, 0.3); padding: 5px 15px; border-radius: 3px; letter-spacing: 2px; text-transform: uppercase; transition: 0.3s;">Smart Watch Link</a>
+    <div id="terminal">
+        <div class="ai-msg">System Initialized. Waiting for command...</div>
+    </div>
+
+    <script>
+        // Supabase Credentials
+        const SUPABASE_URL = "https://tvedcvkeavrortfgnlrh.supabase.co"; // <<< FILL THIS IN
+        const SUPABASE_KEY = "sb_publishable_5AhJkNMX-VijLEiJGe250w_-bxJb4wE"; // <<< FILLED IN
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Check session on load
+        checkSession();
+
+        async function checkSession() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                document.getElementById('auth-overlay').style.display = 'none';
+            }
+        }
+
+        async function handleAuth(type) {
+            if (type === 'login') {
+                const email = document.getElementById('auth-email').value;
+                const password = document.getElementById('auth-password').value;
+                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) alert(error.message);
+                else checkSession();
+            } else {
+                await supabaseClient.auth.signOut();
+                location.reload();
+            }
+        }
+
+        // The public URL provided by ngrok to connect to your local Python backend
+        const SERVER_URL = "https://[YOUR_NGROK_TUNNEL_URL]"; // <<< FILL THIS IN
+        const socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
+
+        const core = document.querySelector('.orb'); /* Changed to target the orb element */
+        const terminal = document.getElementById('terminal');
+        const chatInput = document.getElementById('chat-input');
+        const chatBtn = document.getElementById('chat-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const watchLink = document.getElementById('watch-link');
+        const watchDash = document.getElementById('watch-dashboard');
+        const logEl = document.getElementById('log');
+
+        /**
+         * Handles prompt pre-processing, including basic grammar and spelling checks.
+         * @param {string} text The raw user input.
+         * @returns {string} The processed text.
+         */
+        function handlePrompt(text) {
+            if (!text) return "";
+
+            // 1. Basic Spelling Correction (Common Typos)
+            const typos = { "teh": "the", "recieve": "receive", "dont": "don't", "cant": "can't", "grammer": "grammar" };
+            let processed = text.split(/\s+/).map(word => {
+                const cleanWord = word.toLowerCase().replace(/[.,!?]$/, "");
+                return typos[cleanWord] ? word.replace(new RegExp(cleanWord, 'i'), typos[cleanWord]) : word;
+            }).join(" ");
+
+            // 2. Grammar: Trim and Capitalize first letter
+            processed = processed.trim();
+            if (processed.length > 0) {
+                processed = processed.charAt(0).toUpperCase() + processed.slice(1);
+                // 3. Grammar: Ensure terminal punctuation
+                if (!/[.!?]$/.test(processed)) {
+                    processed += ".";
+                }
+            }
+            return processed;
+        }
+
+        async function sendChat() {
+            const rawText = chatInput.value;
+            const processedText = handlePrompt(rawText);
+            
+            if (processedText) {
+                chatInput.value = '';
+                // Invoke Edge Function for chat logic
+                const { data, error } = await supabaseClient.functions.invoke('chat', {
+                    body: { text: processedText }
+                });
+                if (error) console.error("Edge Function Error:", error);
+            }
+        }
+
+        function addMessageToTerminal(text, className) {
+            const div = document.createElement('div');
+            div.className = className;
+            div.innerText = text;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        chatBtn.addEventListener('click', sendChat);
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                sendChat();
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            socket.emit('manual_stop');
+        });
+
+        // Listen for Realtime Logs from Python Backend via Supabase
+        supabaseClient
+            .channel('schema-db-changes')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'logs' }, payload => {
+                const text = payload.new.content;
+                const div = document.createElement('div');
+                div.className = text.startsWith('You:') ? 'user-msg' : 'ai-msg';
+                div.innerText = (text.startsWith('You:') ? '👤 ' : '🤖 ') + text;
+                terminal.appendChild(div);
+                terminal.scrollTop = terminal.scrollHeight;
+            })
+            .subscribe();
+
+        socket.on('speak_state', (data) => {
+            if (data.active) core.classList.add('speaking');
+            else core.classList.remove('speaking');
+        });
+
+        socket.on('watch_state_change', (data) => {
+            if (data.connected) {
+                watchDash.style.display = 'grid';
+                addMessageToTerminal("System: Biometric sync active.", "ai-msg");
+            }
+        });
+
+        socket.on('connect', () => {
+            addMessageToTerminal("System: Linked to Local AI Core via Tunnel.", "ai-msg");
+            startSimulation(); // Start telemetry only when connected
+            watchDash.style.display = 'grid';
+        });
+
+        let hrAlertCooldown = false;
+        function startSimulation() {
+            setInterval(() => {
+                document.getElementById('val-clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const hr = Math.floor(Math.random() * (85 - 65) + 65);
+                document.getElementById('val-hr').innerText = hr + " BPM";
+                document.getElementById('val-spo2').innerText = Math.floor(Math.random() * (100 - 97) + 97) + "%";
+                document.getElementById('val-stress').innerText = Math.floor(Math.random() * (30 - 10) + 10) + " LVL";
+                
+                const songs = ["Interstellar OST", "After Dark", "Starboy", "Nightcall"];
+                if(Math.random() > 0.8) document.getElementById('val-music').innerText = songs[Math.floor(Math.random()*songs.length)];
+
+                // Alert if Heart Rate exceeds 82 BPM and we aren't in cooldown
+                if (hr > 82 && !hrAlertCooldown) {
+                    document.body.classList.add('alert-hr');
+                    hrAlertCooldown = true;
+                    socket.emit('high_heart_rate', { hr: hr });
+                    // Remove alert color after 8 seconds, but keep cooldown for 30 seconds
+                    setTimeout(() => { document.body.classList.remove('alert-hr'); }, 8000);
+                    setTimeout(() => { hrAlertCooldown = false; }, 30000);
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

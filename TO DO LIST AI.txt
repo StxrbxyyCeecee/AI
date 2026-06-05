@@ -1,0 +1,56 @@
+Running a hybrid program where the frontend is hosted on Vercel and the backend runs locally in VS Code is a great way to maintain control over your local hardware (like microphones or system stats) while having a publicly accessible UI.
+
+Because Vercel is on the public internet and your local machine is behind a firewall, the "bridge" between them is a tool like ngrok.
+
+Here are the step-by-step instructions to get this running:
+
+Step 1: Prepare the Local Backend
+Open your terminal in VS Code and navigate to c:\Users\rayce\OneDrive\Desktop\AI-FRANK\.
+Ensure your virtual environment is active:
+powershell
+.\.venv\Scripts\Activate.ps1
+Install the dependencies:
+bash
+pip install -r requirements.txt
+Start your local server:
+bash
+python app.py
+The server should now be running at http://127.0.0.1:5000.
+Step 2: Create a Public Tunnel (ngrok)
+Since Vercel cannot see your "localhost," you need to expose port 5000 to the web.
+
+Download and install ngrok.
+In a new terminal window, run:
+bash
+ngrok http 5000
+Look for the Forwarding line in the ngrok terminal. It will look like https://xxxx-xxxx.ngrok-free.app. Copy this HTTPS URL.
+Step 3: Update the Frontend URL
+You must point your frontend to the new tunnel URL instead of localhost.
+
+index.html
+-2
++2
+ Show full code block 
+    </div>
+
+    <script>
+        // REPLACE THIS URL with your ngrok URL when running the server locally via VS Code
+        const SERVER_URL = "http://localhost:5000"; 
+        // The public URL provided by ngrok
+        const SERVER_URL = "https://your-ngrok-url-here.ngrok-free.app"; 
+        
+        const socket = io(SERVER_URL, { transports: ['websocket', 'polling'] });
+        const core = document.querySelector('.orb'); /* Changed to target the orb element */
+Step 4: Deploy the Frontend to Vercel
+Ensure your project is pushed to a GitHub repository.
+Log in to Vercel and click Add New > Project.
+Import your AI-FRANK repository.
+Vercel will detect your vercel.json and deploy the index.html as your site.
+Once the deployment is finished, open the Vercel URL.
+Step 5: Testing the Hybrid Link
+Open your browser to the Vercel-generated URL.
+Check the terminal on the website. If everything is correct, you should see: 🤖 System: Linked to Local AI Core via Tunnel.
+Type a message in the chat. You will see the request hit your VS Code terminal in real-time, and Frank will respond from your local machine back to the web!
+Troubleshooting Tips:
+Mixed Content Error: Vercel uses HTTPS. If you use an http ngrok URL, the browser might block the connection. Always use the https version of the ngrok link.
+ngrok Expiration: If you are using a free ngrok account, the URL changes every time you restart it. You will need to update SERVER_URL in index.html and redeploy (or use a Vercel Environment Variable) whenever the tunnel changes.
